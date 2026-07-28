@@ -1,0 +1,13 @@
+---
+- name: Create files
+  hosts: localhost
+  tasks:
+    - name: Create files
+      ansible.builtin.file:
+        state: "touch"
+        path: "{{ playbook_dir }}/../../{{ item }}"
+      loop:
+        - "index.html"
+        - "styles.css"
+        - "main.js"
+...
