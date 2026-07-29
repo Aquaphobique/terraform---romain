@@ -1,0 +1,11 @@
+title = "gitleaks config — tp-iac"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore les identifiants d'exemple officiels de la documentation AWS"
+regexes = [
+  '''AKIAIOSFODNN7EXAMPLE''',
+  '''wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY''',
+]
