@@ -1,33 +1,23 @@
-#!/bin/bash
-set -euo pipefail 
-INFO_COLOR="\033[36;1m"
-WARNING_COLOR="\033[33;1m"
-ERROR_COLOR="\033[31;1m"
-RESET_COLOR="\033[0m"
+#!/usr/bin/env bash
+set -euo pipefail
 
-display_msg()
-{
-    local msg=$1
-    local type=$2
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../utils/display.sh"
 
-    if [ "$type" = "info" ]; then 
-        echo -e "${INFO_COLOR}$msg${RESET_COLOR}"
-    elif [ "$type" = "warning"  ]; then 
-        echo -e "${WARNING_COLOR}$msg${RESET_COLOR}"
-    elif [ "$type" = "error" ]; then 
-        echo -e "${ERROR_COLOR}$msg${RESET_COLOR}"
-    else 
-        echo -e $msg
-    fi
+GIT_REMOTE_URL="git@github.com:Aquaphobique/terraform-v1.git"
 
-}
+if [ ! -d ".git" ]; then
+  git init
+  git add .
+  git commit -m "feat/first-commit"
+  git remote add origin "${GIT_REMOTE_URL}"
+  git remote -v
+  display_msg "Dépôt git initialisé et remote ajouté." success
+else
+  display_msg "Already a git repo" info
 
-if [ ! -d ".git" ]; then 
-    git init
-    git add .
-    git commit -m "feat/first-commit"
-    git remote add origin git@github.com:$(git config user.name)/terraform-v1.git 
-    git remote -v
-else 
-    display_msg "Already a git repo" info # $1="Already a git repo" $2=info
+  if ! git remote get-url origin > /dev/null 2>&1; then
+    git remote add origin "${GIT_REMOTE_URL}"
+    display_msg "Remote 'origin' ajouté." success
+  fi
 fi
