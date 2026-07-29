@@ -1,0 +1,17 @@
+# .github/workflows/terraform-validate.yml
+name: Terraform Validate
+
+on:
+  push:
+    branches: [TP1, dev]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+
+      - run: terraform -chdir=terraform_V1 fmt -check -recursive
+      - run: terraform -chdir=terraform_V1 init -backend=false
+      - run: terraform -chdir=terraform_V1 validate
