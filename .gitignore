@@ -1,0 +1,54 @@
+# .gitignore
+# Fichiers sensibles
+.env
+*.pem
+*.key
+*.ppk
+*.jks
+*.keystore
+*.cer
+*.crt
+*.pfx
+*.p12
+ 
+# Secrets cloud
+credentials
+aws_credentials
+gcp_credentials
+azure_credentials
+ 
+# Logs et caches
+*.log
+*.swp
+*.bak
+.DS_Store
+Thumbs.db
+ 
+# Dépendances et builds
+node_modules/
+dist/
+build/
+target/
+__pycache__/
+ 
+# Outils DevOps
+.ansible/
+inventory.ini
+ 
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*tfplan*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+ 
+# AWS
+.aws/
+ 
+# Azure
+.azure/
