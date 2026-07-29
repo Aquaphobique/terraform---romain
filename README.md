@@ -147,3 +147,5 @@ configuration au sens ITIL du terme.**
   exactes des providers utilisés — évitant la dérive de configuration si
   deux membres de l'équipe, ou un pipeline CI, initialisaient le projet
   avec des versions différentes.
+
+test signature
