@@ -240,3 +240,12 @@ Saved the plan to: tfplan
 To perform exactly these actions, run the following command to apply:
     terraform apply "tfplan"
 ```
+
+## Statut final
+
+- Instance déployée et fonctionnelle, dérive testée (renommage manuel via
+  la console) et corrigée par `terraform apply`.
+- Infrastructure détruite en fin de séance (`make tf.destroy`) : aucune
+  ressource restante, vérifié via `aws ec2 describe-instances`.
+- Points restants à compléter à la prochaine séance : 3 infos sensibles
+  du `tfstate`, réponse IMDSv2/Capital One, ouverture de la Pull Request.
