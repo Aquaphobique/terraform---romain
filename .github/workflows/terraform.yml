@@ -1,0 +1,98 @@
+# .github/workflows/terraform.yml
+name: Terraform
+
+on:
+  push:
+    branches: [TP2]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action"
+        required: true
+        type: choice
+        options: [plan, apply]
+
+permissions:
+  contents: read
+
+jobs:
+  # Ne touche jamais le cloud, tourne à chaque push sur TP2.
+  validate:
+    name: fmt + validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - name: terraform fmt -check
+        run: terraform -chdir=envs/dev-aws fmt -check -recursive
+
+      - name: terraform init (sans backend, juste pour valider)
+        run: terraform -chdir=envs/dev-aws init -backend=false
+
+      - name: terraform validate
+        run: terraform -chdir=envs/dev-aws validate
+
+  # Nécessite des identifiants cloud. Rappel Module 3 : `terraform plan`
+  # n'est pas en lecture seule (risque OWASP CICD-SEC-04). Le trigger
+  # `push` (et non `pull_request`) limite déjà ce job aux personnes ayant
+  # un accès en écriture au dépôt — contrairement à une PR externe.
+  plan:
+    name: Plan AWS
+    needs: validate
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: dev-aws-plan
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Charger la configuration (project.toml)
+        run: python3 scripts/load-config.py >> "$GITHUB_ENV"
+
+      - name: Identifiants AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: terraform init
+        run: terraform -chdir=envs/dev-aws init
+
+      - name: terraform plan
+        env:
+          TF_VAR_cidr_admin: "0.0.0.0/32" # placeholder CI, aucune ressource n'est appliquée ici
+          TF_VAR_nom_cle_ssh: ${{ secrets.AWS_KEY_PAIR_NAME }}
+        run: terraform -chdir=envs/dev-aws plan -no-color
+
+  # JAMAIS automatique. Déclenché à la main, avec approbation exigée par
+  # les règles de protection de l'environnement GitHub (Settings >
+  # Environments > dev-aws-apply > Required reviewers).
+  apply:
+    name: Apply AWS (manuel)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'
+    runs-on: ubuntu-latest
+    environment: dev-aws-apply
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+      - run: python3 scripts/load-config.py >> "$GITHUB_ENV"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+      - run: terraform -chdir=envs/dev-aws init
+      - env:
+          TF_VAR_cidr_admin: ${{ secrets.ADMIN_CIDR }}
+          TF_VAR_nom_cle_ssh: ${{ secrets.AWS_KEY_PAIR_NAME }}
+        run: terraform -chdir=envs/dev-aws apply -auto-approve

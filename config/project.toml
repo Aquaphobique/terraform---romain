@@ -1,0 +1,17 @@
+# Configuration du projet TP2 — lue par scripts/load-config.py
+# Ce fichier n'est PAS un secret : il ne contient que des paramètres publics
+# (région, tailles, préfixes). Les secrets (IP admin, clé SSH...) passent par
+# TF_VAR_ à l'exécution — voir scripts/set-env.sh.
+
+[project]
+nom          = "tp-iac"
+proprietaire = "romain"
+
+[aws]
+region        = "eu-west-3"
+cidr_vpc      = "10.20.0.0/16"
+instance_type = "t2.micro"
+
+[tags]
+environment = "dev"
+managed_by  = "terraform"

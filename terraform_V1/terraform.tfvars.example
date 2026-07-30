@@ -1,0 +1,11 @@
+# Copiez ce fichier en terraform.tfvars (déjà gitignored, ne sera pas commité)
+# et adaptez nom_cle_ssh à la paire de clés EC2 que vous avez créée.
+#
+# projet, proprietaire, region, cidr_vpc, instance_type sont normalement
+# fournis par `source scripts/set-env.sh aws` (lit config/project.toml).
+# Ne dupliquez pas ces valeurs ici sauf pour un override ponctuel.
+
+nom_cle_ssh = "ma-cle-ec2"
+
+# NE JAMAIS renseigner cidr_admin ici : utilisez scripts/set-env.sh,
+# qui le calcule à partir de votre IP publique actuelle.
