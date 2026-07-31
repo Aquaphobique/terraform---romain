@@ -1,0 +1,24 @@
+- name: Installation Engine-x et déploiement du site
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Apt Step
+      ansible.builtin.apt:
+        state: present
+        name: nginx
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Déploie le site (Space Tactics)
+      ansible.builtin.copy:
+        src: "../site/"
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: "0644"
+
+    - name: System Check
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes

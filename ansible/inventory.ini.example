@@ -1,0 +1,5 @@
+# Généré automatiquement par `make tf.inventory` (Étape 3 du pipeline).
+# Ce fichier n'est qu'un exemple committé pour référence — le vrai
+# ansible/inventory.ini est ignoré par git (déjà présent dans .gitignore).
+[webservers]
+203.0.113.10 ansible_user=ubuntu ansible_ssh_private_key_file="~/.ssh/ma-cle-ec2.pem"
