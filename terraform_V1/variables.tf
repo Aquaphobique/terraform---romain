@@ -25,11 +25,6 @@ variable "region" {
   default     = "eu-west-3"
 }
 
-variable "cidr_vpc" {
-  description = "Bloc CIDR du VPC."
-  type        = string
-  default     = "10.20.0.0/16"
-}
 
 variable "instance_type" {
   description = "Type d'instance EC2."
