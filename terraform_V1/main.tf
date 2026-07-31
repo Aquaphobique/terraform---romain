@@ -69,10 +69,18 @@ resource "aws_security_group" "web" {
   }
 
   egress {
-    description = "Sortie libre (mises a jour)"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTP sortant (mises a jour, depots apt)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "HTTPS sortant (mises a jour, depots apt)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -80,7 +88,6 @@ resource "aws_security_group" "web" {
 }
 
 # -------------------------------------------------------------- Instance -----
-
 resource "aws_instance" "web" {
   ami                    = var.default_ubuntu_ami
   instance_type          = var.instance_type
@@ -91,7 +98,7 @@ resource "aws_instance" "web" {
   # ---- Durcissement obligatoire (cf. Capital One 2019) --------------------
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required" # IMDSv2 imposé
+    http_tokens                 = "required"
     http_put_response_hop_limit = 2
   }
 
