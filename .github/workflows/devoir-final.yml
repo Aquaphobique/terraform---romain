@@ -1,0 +1,147 @@
+name: Devoir Final — Pipeline CI/CD Terraform + Ansible
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  TF_VAR_projet: "tp-iac"
+  TF_VAR_proprietaire: "romain"
+  TF_VAR_region: "eu-west-3"
+  TF_VAR_cidr_vpc: "10.20.0.0/16"
+  TF_VAR_instance_type: "t2.micro"
+  TF_VAR_nom_cle_ssh: ${{ secrets.AWS_KEY_PAIR_NAME }}
+  TF_VAR_cidr_admin: ${{ secrets.ADMIN_CIDR }}
+  TF_VAR_default_vpc_id: ${{ secrets.DEFAULT_VPC_ID }}
+  TF_VAR_default_public_subnet_id: ${{ secrets.DEFAULT_SUBNET_ID }}
+  TF_VAR_default_ubuntu_ami: ${{ secrets.DEFAULT_AMI_ID }}
+
+jobs:
+  # --------------------------------------------------------------------
+  # Étape 1 — Validation du code d'infrastructure
+  # --------------------------------------------------------------------
+  validate:
+    name: "Étape 1 — fmt + tflint + trivy"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: terraform init
+        run: make tf.init
+
+      - name: fmt (échoue si non formaté)
+        run: make tf.fmt
+
+      - name: tflint
+        run: make tf.lint
+
+      - name: Installer Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin
+
+      - name: trivy (scan sur un plan à blanc)
+        run: make tf.trivy
+
+  # --------------------------------------------------------------------
+  # Étape 2 — Provisionnement conditionnel
+  # `needs: validate` : ce job ne démarre QUE si l'étape 1 réussit
+  # intégralement — sinon GitHub Actions le saute automatiquement.
+  # --------------------------------------------------------------------
+  provision:
+    name: "Étape 2 — Provisionnement EC2"
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: terraform init
+        run: make tf.init
+
+      - name: terraform plan
+        run: make tf.plan
+
+      - name: terraform apply
+        run: make tf.apply
+
+  # --------------------------------------------------------------------
+  # Étapes 3 & 4 — Inventaire Ansible + configuration
+  # --------------------------------------------------------------------
+  configure:
+    name: "Étapes 3+4 — Inventaire et configuration Ansible"
+    needs: provision
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: terraform init
+        run: make tf.init
+
+      - name: Installer Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Écrire la clé SSH depuis le secret
+        run: |
+          install -m 600 /dev/null /tmp/ci-key.pem
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > /tmp/ci-key.pem
+
+      - name: "Étape 3 — générer l'inventaire Ansible"
+        run: make tf.inventory SSH_KEY_PATH=/tmp/ci-key.pem
+
+      - name: Autoriser temporairement l'IP du runner en SSH
+        run: |
+          RUNNER_IP="$(curl -s https://checkip.amazonaws.com)/32"
+          SG_ID="$(terraform -chdir=terraform_V1 output -raw security_group_id)"
+          echo "SG_ID=$SG_ID" >> "$GITHUB_ENV"
+          echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" --protocol tcp --port 22 \
+            --cidr "$RUNNER_IP" --region eu-west-3
+
+      - name: "Étape 4 — ansible-playbook"
+        run: make ansible.deploy
+
+      - name: Retirer l'accès SSH temporaire du runner
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$SG_ID" --protocol tcp --port 22 \
+            --cidr "$RUNNER_IP" --region eu-west-3
