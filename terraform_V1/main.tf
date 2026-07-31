@@ -6,46 +6,6 @@ provider "aws" {
   }
 }
 
-# ---------------------------------------------------------------- Réseau -----
-resource "aws_vpc" "principal" {
-  cidr_block           = var.cidr_vpc
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  tags = { Name = "${local.prefixe}-vpc" }
-}
-
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.principal.id
-
-  tags = { Name = "${local.prefixe}-igw" }
-}
-
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.principal.id
-  cidr_block              = local.cidr_subnet_public
-  availability_zone       = "${var.region}a"
-  map_public_ip_on_launch = true
-
-  tags = { Name = "${local.prefixe}-public-a" }
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.principal.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-
-  tags = { Name = "${local.prefixe}-rt-public" }
-}
-
-resource "aws_route_table_association" "public" {
-  subnet_id      = var.default_public_subnet_id
-  route_table_id = aws_route_table.public.id
-}
-
 # ------------------------------------------------------ Groupe de sécurité ---
 resource "aws_security_group" "web" {
   name        = "${local.prefixe}-web"
