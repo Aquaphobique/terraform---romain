@@ -42,7 +42,7 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id              = var.default_public_subnet_id
+  subnet_id      = var.default_public_subnet_id
   route_table_id = aws_route_table.public.id
 }
 
@@ -95,7 +95,7 @@ resource "aws_instance" "web" {
   instance_type          = var.instance_type
   subnet_id              = var.default_public_subnet_id
   vpc_security_group_ids = [aws_security_group.web.id]
-  key_name                = var.nom_cle_ssh
+  key_name               = var.nom_cle_ssh
 
   # ---- Durcissement obligatoire (cf. Capital One 2019) --------------------
   metadata_options {
