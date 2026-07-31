@@ -80,3 +80,34 @@ lint: ## Lance pre-commit sur tous les fichiers
 
 secrets: ## Scanne tout l'historique à la recherche de secrets
 	gitleaks detect --source . --verbose
+
+# =============================================================================
+# Devoir final — pipeline CI/CD Terraform + Ansible
+# =============================================================================
+
+SSH_KEY_PATH ?= $(HOME)/.ssh/ma-cle-ec2.pem
+
+.PHONY: tf.fmt tf.lint tf.trivy tf.security tf.inventory ansible.deploy
+
+tf.fmt: ## Étape 1a — vérifie le formatage (échoue si non formaté, ne modifie rien)
+	$(TF) fmt -check -recursive -diff
+
+tf.lint: ## Étape 1b — analyse de qualité avec TFLint
+	cd $(TF_DIR) && tflint --init && tflint
+
+tf.trivy: tf.init ## Étape 1c — scan de sécurité avec Trivy sur un plan à blanc
+	$(TF) plan -input=false -out=tfplan-scan
+	$(TF) show -json tfplan-scan > $(TF_DIR)/tfplan-scan.json
+	trivy config $(TF_DIR)/tfplan-scan.json
+	rm -f $(TF_DIR)/tfplan-scan $(TF_DIR)/tfplan-scan.json
+
+tf.security: tf.init tf.fmt tf.lint tf.trivy ## Étape 1 complète : fmt + tflint + trivy
+
+tf.inventory: ## Étape 3 — génère ansible/inventory.ini depuis terraform output
+	@IP="$$($(TF) output -raw romain_webserver_public_ip_address)"; \
+	printf '[webservers]\n%s ansible_user=ubuntu ansible_ssh_private_key_file="%s"\n' "$$IP" "$(SSH_KEY_PATH)" > ansible/inventory.ini; \
+	echo "Inventaire généré :"; \
+	cat ansible/inventory.ini
+
+ansible.deploy: ## Étape 4 — applique le playbook Ansible sur l'inventaire généré
+	ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
