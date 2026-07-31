@@ -61,8 +61,3 @@ variable "default_ubuntu_ami" {
   description = "AMI Ubuntu whitelistée par la policy IAM du compte."
   type        = string
 }
-
-variable "default_sg_id" {
-  description = "Security group par défaut (même VPC que le sous-réseau ci-dessus)."
-  type        = string
-}
