@@ -1,0 +1,9 @@
+# AVD-AWS-0164 : IP publique nécessaire — serveur web public par conception
+# (architecture assumée du TP, cf. Module 3). Risque accepté, pas un oubli.
+AVD-AWS-0164
+
+# AVD-AWS-0104 : egress 0.0.0.0/0 restreint aux ports 80/443 (mises à jour
+# apt). Une instance doit joindre des dépôts sur des IP arbitraires ;
+# restreindre le CIDR casserait les mises à jour de sécurité. Risque
+# accepté et documenté, ports au moins limités par rapport à ALL/-1.
+AVD-AWS-0104

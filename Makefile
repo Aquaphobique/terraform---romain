@@ -98,7 +98,7 @@ tf.lint: ## Étape 1b — analyse de qualité avec TFLint
 tf.trivy: tf.init ## Étape 1c — scan de sécurité avec Trivy sur un plan à blanc
 	$(TF) plan -input=false -out=tfplan-scan
 	$(TF) show -json tfplan-scan > $(TF_DIR)/tfplan-scan.json
-	trivy config $(TF_DIR)/tfplan-scan.json
+	trivy config --exit-code 1 --severity CRITICAL,HIGH --ignorefile $(TF_DIR)/.trivyignore $(TF_DIR)/tfplan-scan.json
 	rm -f $(TF_DIR)/tfplan-scan $(TF_DIR)/tfplan-scan.json
 
 tf.security: tf.init tf.fmt tf.lint tf.trivy ## Étape 1 complète : fmt + tflint + trivy
