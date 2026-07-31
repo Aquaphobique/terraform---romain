@@ -1,6 +1,8 @@
 name: Devoir Final — Pipeline CI/CD Terraform + Ansible
 
 on:
+  push:
+    branches: [TP2-v2]
   workflow_dispatch: {}
 
 permissions:
